@@ -68,6 +68,37 @@ function km_rpbt_query_related_posts( $post_id, $taxonomies = 'category', $args 
 	$args       = km_rpbt_sanitize_args( $args );
 	$related    = $args['related'];
 
+	/// Check if Advanced Custom Field Plugin is enabled
+	$active_plugins = apply_filters('active_plugins', get_option('active_plugins'));
+	$is_acf_active = false;
+
+	foreach($active_plugins as $plugin){
+		if($plugin == 'advanced-custom-fields/acf.php'){
+			$is_acf_active = true;
+		}
+	}
+
+	/// Get the current post and its relation if ACF Plugin is enabled
+	if( $post_id && $is_acf_active){
+		$current_post = get_post($post_id);
+		$manual_related_posts = get_field('related_ctas'); /// Custom Relationship field from ACF
+		$manual_related_posts_id = array();
+	
+		if(is_array($manual_related_posts)){
+			foreach($manual_related_posts as $manual_related_post){
+				array_push($manual_related_posts_id, $manual_related_post->ID);
+			}
+		
+			array_unique($manual_related_posts_id);
+		
+			$manual_post_ids_sql = '';
+			if(count($manual_related_posts_id) > 0){
+				$manual_post_ids_sql = " WHERE $wpdb->posts.ID";
+				$manual_post_ids_sql .= ' IN (' . implode( ', ', $manual_related_posts_id ) . ')';
+			}
+		}
+	}
+
 	// Check if this is a query for unrelated terms.
 	$unrelated_terms = ! $related && $args['terms'];
 
@@ -315,7 +346,15 @@ function km_rpbt_query_related_posts( $post_id, $taxonomies = 'category', $args 
 		$order_by_sql = 'ORDER BY ' . $order_by_sql;
 	}
 
-	$query = "SELECT {$select_sql} FROM $wpdb->posts {$join_sql} {$where_sql} {$group_by_sql} {$order_by_sql} {$limit_sql}";
+	$query = "SELECT {$select_sql} FROM $wpdb->posts {$join_sql} {$where_sql} {$group_by_sql}";
+	/// Modify the query to retrieve Manual Related posts of Advanced Custom Field is enabled
+	if(count($manual_related_posts_id) > 0 && $is_acf_active){
+		$union_query = " UNION SELECT wp_posts.*, 0 as termcount FROM wp_posts WHERE wp_posts.ID IN (". implode( ', ', $manual_related_posts_id ) .") ";
+		$query = "SELECT * FROM ({$query}{$union_query}) wp_posts {$order_by_sql}";
+	}
+	else{
+		$query = "{$query} {$order_by_sql} {$limit_sql}";
+	}
 
 	$last_changed = wp_cache_get( 'last_changed', 'posts' );
 	if ( ! $last_changed ) {
