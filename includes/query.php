@@ -90,12 +90,6 @@ function km_rpbt_query_related_posts( $post_id, $taxonomies = 'category', $args 
 			}
 		
 			array_unique($manual_related_posts_id);
-		
-			$manual_post_ids_sql = '';
-			if(count($manual_related_posts_id) > 0){
-				$manual_post_ids_sql = " WHERE $wpdb->posts.ID";
-				$manual_post_ids_sql .= ' IN (' . implode( ', ', $manual_related_posts_id ) . ')';
-			}
 		}
 	}
 
