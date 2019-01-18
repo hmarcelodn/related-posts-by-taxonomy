@@ -81,7 +81,7 @@ function km_rpbt_query_related_posts( $post_id, $taxonomies = 'category', $args 
 	/// Get the current post and its relation if ACF Plugin is enabled
 	if( $post_id && $is_acf_active){
 		$current_post = get_post($post_id);
-		$manual_related_posts = get_field('related_ctas'); /// Custom Relationship field from ACF
+		$manual_related_posts = get_field('related_posts'); /// Custom Relationship field from ACF
 		$manual_related_posts_id = array();
 	
 		if(is_array($manual_related_posts)){
